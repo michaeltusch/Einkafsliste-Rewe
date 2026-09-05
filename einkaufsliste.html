@@ -1,6 +1,3 @@
-Hier der vollständige Code zum Copy-Paste in die GitHub-App:
-
-```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -21,7 +18,7 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
 
   body {
     margin: 0;
-    padding: 0 0 130px 0;
+    padding: 0 0 175px 0;
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -237,6 +234,85 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
     font-size: 12px;
     color: var(--muted);
     margin-bottom: 10px;
+  }
+
+  .game-scene {
+    position: relative;
+    max-width: 560px;
+    margin: 0 auto 8px auto;
+    height: 34px;
+    overflow: hidden;
+  }
+
+  .game-ground {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2px;
+    height: 2px;
+    background-image: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 6px, transparent 6px, transparent 12px);
+  }
+
+  .game-finish {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .game-character {
+    position: absolute;
+    bottom: 2px;
+    left: 4%;
+    transform: translateX(-50%);
+    transition: left 0.6s ease;
+  }
+
+  .game-character svg {
+    display: block;
+    shape-rendering: crispEdges;
+  }
+
+  .game-character .leg-b {
+    opacity: 0;
+  }
+
+  .game-character.walking .leg-a {
+    animation: legToggleA 0.5s steps(1, end) infinite;
+  }
+
+  .game-character.walking .leg-b {
+    animation: legToggleB 0.5s steps(1, end) infinite;
+  }
+
+  .game-character.walking {
+    animation: bob 0.5s steps(1, end) infinite;
+  }
+
+  .game-character.arrived .leg-a {
+    opacity: 1;
+    animation: none;
+  }
+
+  .game-character.arrived .leg-b {
+    opacity: 0;
+    animation: none;
+  }
+
+  @keyframes legToggleA {
+    0%, 49.9% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  @keyframes legToggleB {
+    0%, 49.9% { opacity: 0; }
+    50%, 100% { opacity: 1; }
+  }
+
+  @keyframes bob {
+    0%, 49.9% { transform: translateX(-50%) translateY(0); }
+    50%, 100% { transform: translateX(-50%) translateY(-1px); }
   }
 
   .progress-bar {
@@ -684,6 +760,30 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
 <footer>
   <div class="progress-text" id="progressText">0 von 24 erledigt</div>
   <div class="progress-subtext" id="progressSubtext">davon 0 nicht vorhanden</div>
+  <div class="game-scene">
+    <div class="game-ground"></div>
+    <div class="game-finish">🏁</div>
+    <div class="game-character walking" id="gameCharacter">
+      <svg viewBox="0 0 22 16" width="44" height="32">
+        <rect x="14" y="5" width="1" height="4" fill="#cfd8dc"/>
+        <rect x="15" y="5" width="5" height="1" fill="#cfd8dc"/>
+        <rect x="19" y="5" width="1" height="4" fill="#cfd8dc"/>
+        <rect x="15" y="9" width="1" height="1" fill="#111111"/>
+        <rect x="19" y="9" width="1" height="1" fill="#111111"/>
+        <rect x="12" y="5" width="2" height="1" fill="#f2c29e"/>
+        <rect x="9" y="1" width="3" height="3" fill="#f2c29e"/>
+        <rect x="8" y="4" width="4" height="4" fill="#2f6f4f"/>
+        <g class="leg-a">
+          <rect x="8" y="8" width="2" height="4" fill="#1c2b39"/>
+          <rect x="11" y="8" width="2" height="3" fill="#1c2b39"/>
+        </g>
+        <g class="leg-b">
+          <rect x="8" y="8" width="2" height="3" fill="#1c2b39"/>
+          <rect x="11" y="8" width="2" height="4" fill="#1c2b39"/>
+        </g>
+      </svg>
+    </div>
+  </div>
   <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
   <div class="buttons-row">
     <button id="resetBtn">Zurücksetzen</button>
@@ -702,6 +802,7 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
   var resetBtn = document.getElementById('resetBtn');
   var mailBtn = document.getElementById('mailBtn');
   var timerBadge = document.getElementById('timerBadge');
+  var gameCharacter = document.getElementById('gameCharacter');
   var wasComplete = false;
 
   var startTime = Date.now();
@@ -911,9 +1012,22 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
       if (ok.checked || noAvail.checked) done++;
       if (noAvail.checked) na++;
     });
+    var percent = total ? (done / total * 100) : 0;
     progressText.textContent = done + ' von ' + total + ' erledigt';
     progressSubtext.textContent = 'davon ' + na + ' nicht vorhanden';
-    progressFill.style.width = (total ? (done / total * 100) : 0) + '%';
+    progressFill.style.width = percent + '%';
+
+    if (gameCharacter) {
+      var walkPos = Math.max(4, Math.min(96, percent));
+      gameCharacter.style.left = walkPos + '%';
+      if (done === total && total > 0) {
+        gameCharacter.classList.remove('walking');
+        gameCharacter.classList.add('arrived');
+      } else {
+        gameCharacter.classList.add('walking');
+        gameCharacter.classList.remove('arrived');
+      }
+    }
 
     if (done === total && total > 0) {
       doneBtn.classList.add('show');
@@ -986,4 +1100,3 @@ Hier der vollständige Code zum Copy-Paste in die GitHub-App:
 
 </body>
 </html>
-```
