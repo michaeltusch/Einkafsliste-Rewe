@@ -214,6 +214,12 @@
     margin-bottom: 10px;
   }
 
+  footer .timer-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
   .progress-bar {
     width: 100%;
     max-width: 560px;
@@ -233,6 +239,7 @@
 
   .buttons-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
     max-width: 560px;
@@ -270,6 +277,18 @@
   #doneBtn.warn {
     background: var(--danger);
     animation: none;
+  }
+
+  #mailBtn {
+    display: none;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid var(--border);
+    font-weight: 700;
+  }
+
+  #mailBtn.show {
+    display: inline-flex;
   }
 
   @keyframes pulse {
@@ -644,10 +663,12 @@
 <footer>
   <div class="progress-text" id="progressText">0 von 24 erledigt</div>
   <div class="progress-subtext" id="progressSubtext">davon 0 nicht vorhanden</div>
+  <div class="timer-text" id="timerText">Zeit: 00:00</div>
   <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
   <div class="buttons-row">
     <button id="resetBtn">Zurücksetzen</button>
     <button id="doneBtn">✔ Einkauf komplett!</button>
+    <button id="mailBtn">✉ Ergebnis mailen</button>
   </div>
 </footer>
 
@@ -659,7 +680,69 @@
   var progressFill = document.getElementById('progressFill');
   var doneBtn = document.getElementById('doneBtn');
   var resetBtn = document.getElementById('resetBtn');
+  var mailBtn = document.getElementById('mailBtn');
+  var timerText = document.getElementById('timerText');
   var wasComplete = false;
+
+  var startTime = Date.now();
+  var timerInterval = null;
+
+  function formatDuration(ms) {
+    var totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    var minutes = Math.floor(totalSeconds / 60);
+    var seconds = totalSeconds % 60;
+    return (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+  }
+
+  function tickTimer() {
+    if (timerText) {
+      timerText.textContent = 'Zeit: ' + formatDuration(Date.now() - startTime);
+    }
+  }
+
+  function startTimer() {
+    tickTimer();
+    timerInterval = setInterval(tickTimer, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    tickTimer();
+  }
+
+  function collectResults() {
+    var bought = [];
+    var notAvailable = [];
+    document.querySelectorAll('.category').forEach(function (cat) {
+      var heading = cat.querySelector('h2');
+      var catName = heading ? heading.textContent : '';
+      cat.querySelectorAll('.item-row').forEach(function (row) {
+        var textEl = row.querySelector('.item-text');
+        var text = textEl ? textEl.textContent : '';
+        var ok = row.querySelector('.check-ok');
+        var na = row.querySelector('.check-na');
+        if (ok && ok.checked) bought.push(catName + ': ' + text);
+        if (na && na.checked) notAvailable.push(catName + ': ' + text);
+      });
+    });
+    return { bought: bought, notAvailable: notAvailable };
+  }
+
+  function buildMailtoLink() {
+    var elapsed = formatDuration(Date.now() - startTime);
+    var res = collectResults();
+    var subject = 'Einkauf erledigt – Rewe (' + elapsed + ')';
+    var body = 'Dauer: ' + elapsed + '\n\n';
+    body += 'Gekauft (' + res.bought.length + '):\n';
+    body += res.bought.length ? res.bought.map(function (x) { return '- ' + x; }).join('\n') : '(nichts abgehakt)';
+    body += '\n\n';
+    body += 'Nicht vorhanden (' + res.notAvailable.length + '):\n';
+    body += res.notAvailable.length ? res.notAvailable.map(function (x) { return '- ' + x; }).join('\n') : '(keine)';
+    return 'mailto:michael.tusch@googlemail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
 
   function fireConfetti() {
     var canvas = document.createElement('canvas');
@@ -812,6 +895,7 @@
 
     if (done === total && total > 0) {
       doneBtn.classList.add('show');
+      mailBtn.classList.add('show');
       if (na > 0) {
         doneBtn.textContent = '⚠ Abgeschlossen – nicht alles erhältlich';
         doneBtn.classList.add('warn');
@@ -821,15 +905,21 @@
       }
       if (!wasComplete) {
         wasComplete = true;
+        stopTimer();
         if (na === 0) {
           fireConfetti();
           showCongrats();
         } else {
           playFailSound();
         }
+        window.location.href = buildMailtoLink();
       }
     } else {
       doneBtn.classList.remove('show');
+      mailBtn.classList.remove('show');
+      if (wasComplete) {
+        startTimer();
+      }
       wasComplete = false;
     }
   }
@@ -858,9 +948,17 @@
       row.querySelector('.check-ok').checked = false;
       row.querySelector('.check-na').checked = false;
     });
+    startTime = Date.now();
+    wasComplete = false;
+    startTimer();
     updateProgress();
   });
 
+  mailBtn.addEventListener('click', function () {
+    window.location.href = buildMailtoLink();
+  });
+
+  startTimer();
   updateProgress();
 </script>
 
