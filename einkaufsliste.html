@@ -1,3 +1,6 @@
+Hier der vollständige Code zum Copy-Paste in die GitHub-App:
+
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -27,11 +30,33 @@
   header {
     background: var(--bg);
     color: var(--text);
-    padding: 20px 16px 16px 16px;
+    padding: 20px 120px 16px 16px;
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 10;
+  }
+
+  .timer-badge {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 50;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    line-height: 1;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+
+  .timer-badge.stopped {
+    background: var(--muted);
+    color: #1a1a1a;
   }
 
   header h1 {
@@ -214,12 +239,6 @@
     margin-bottom: 10px;
   }
 
-  footer .timer-text {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
   .progress-bar {
     width: 100%;
     max-width: 560px;
@@ -316,6 +335,8 @@
 </style>
 </head>
 <body>
+
+<div class="timer-badge" id="timerBadge">00:00</div>
 
 <header>
   <h1>Einkaufsliste</h1>
@@ -663,7 +684,6 @@
 <footer>
   <div class="progress-text" id="progressText">0 von 24 erledigt</div>
   <div class="progress-subtext" id="progressSubtext">davon 0 nicht vorhanden</div>
-  <div class="timer-text" id="timerText">Zeit: 00:00</div>
   <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
   <div class="buttons-row">
     <button id="resetBtn">Zurücksetzen</button>
@@ -681,7 +701,7 @@
   var doneBtn = document.getElementById('doneBtn');
   var resetBtn = document.getElementById('resetBtn');
   var mailBtn = document.getElementById('mailBtn');
-  var timerText = document.getElementById('timerText');
+  var timerBadge = document.getElementById('timerBadge');
   var wasComplete = false;
 
   var startTime = Date.now();
@@ -695,12 +715,13 @@
   }
 
   function tickTimer() {
-    if (timerText) {
-      timerText.textContent = 'Zeit: ' + formatDuration(Date.now() - startTime);
+    if (timerBadge) {
+      timerBadge.textContent = formatDuration(Date.now() - startTime);
     }
   }
 
   function startTimer() {
+    if (timerBadge) { timerBadge.classList.remove('stopped'); }
     tickTimer();
     timerInterval = setInterval(tickTimer, 1000);
   }
@@ -711,6 +732,7 @@
       timerInterval = null;
     }
     tickTimer();
+    if (timerBadge) { timerBadge.classList.add('stopped'); }
   }
 
   function collectResults() {
@@ -964,3 +986,4 @@
 
 </body>
 </html>
+```
